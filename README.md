@@ -1,2 +1,2 @@
-# 2D-platformer
+# TT-game
 simple javascript canvas game
