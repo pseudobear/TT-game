@@ -11,6 +11,7 @@ var play = true;
 let objects = new Map();
 let dynos = new Map();
 var bounces = new Array();
+var players = new Array();
 //classes
 function dynObject(x,y){
   this.x = x;
@@ -31,9 +32,27 @@ function bounce(x,y){
   this.y = y;
   this.count = 0;
 }
+function player(x,y){
+  this.x = x;
+  this.y = y;
+  this.xvel = 0;
+  this.yvel = 0;
+  this.zvel = 0;
+  this.xaccel = 0;
+  this.yaccel = 0;
+  this.zaccel = 0;
+  this.stun = 0;              //keeps track of stun frames
+  this.fhts = false;          //Forehand topspin
+  this.bhts = false;          //Backhand topspin
+}
 //event listeners
 document.addEventListener("keydown", function (event){
-
+  if(event.key=="a"){
+     players[0].yaccel=-2;
+  }
+  if(even.key=="d"){
+    players[0].yaccel=2;
+  }
 });
 function drawBall(x,y){
   ctx.shadowColor = "1a0000";
@@ -80,13 +99,19 @@ function calcShadowBlur(height,thicc){
 function init(){          //objects are (height,thickness)
   objects.set("table",new object(125,3));      //calculated height 125px ITTF proportion
   objects.set("net",new object(0,25));         //calculated height 25px ITTF proportion
+  objects.set("player",new object(0,105));
   objects.set("ball",new object(300,5));
   dynos.set("ball",new dynObject(350,400));
+  players.push(new player(160,200));
   window.requestAnimationFrame(mainLoop);
 }
 function mainLoop(){
   ctx.clearRect(0,0,1000,700);                //clear frame
   drawRect(0,0,1000,700,"#ffb3b3",null);                     //red background
+  //draw players
+  for(let i = 0; i<players.length; i++){
+    drawRect(players[i].x, players[i].y,players[i].x+80,players[i].y+80,"#C6C6C6","player");
+  }
   //draw table
   drawRect(275,225,725,475,"#4da6ff","table");        //table base, 5x the ft dimension of ITTF regulation
   drawRect(275,225,725,230,"#ffffff",null);        //tapes
@@ -100,6 +125,17 @@ function mainLoop(){
   //draw ball
   drawBall(dynos.get("ball").x,dynos.get("ball").y);
   //compute physics
+  //players
+  for(let i = 0; i<players.length; i++){
+    players[i].xvel+=players[i].xaccel;
+    players[i].yvel+=players[i].yaccel;
+    players[i].x+=players[i].xvel;
+    players[i].y+=players[i].yvel;
+    //friction
+    players[i].xaccel*=0.5;
+    players[i].yaccel*=0.5;
+  }
+  //dynamic objects
   dynos.forEach(function(val,key,map){
     //friction
     if(dynos.get(key).xvel>0.05){
