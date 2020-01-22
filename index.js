@@ -7,6 +7,7 @@ ctx.font = "30px Arial";
 //var dec
 const shadConst = 0.2;
 const netHeight = 25;
+var play = true;
 let objects = new Map();
 let dynos = new Map();
 //classes
@@ -15,8 +16,10 @@ function dynObject(x,y){
   this.y = y;
   this.xvel = 0;
   this.yvel = 0;
+  this.zvel = 0;
   this.xaccel = 0;
   this.yaccel = 0;
+  this.zaccel = -26;
 }
 function object(height,thicc){
   this.thicc=thicc;
@@ -79,7 +82,30 @@ function mainLoop(){
   drawBall(dynos.get("ball").x,dynos.get("ball").y);
 
   //compute physics
-  
+  dynos.forEach(function(val,key,map){
+    dynos.get(key).xvel+=dynos.get(key).xaccel;
+    dynos.get(key).yvel+=dynos.get(key).yaccel;
+    dynos.get(key).zvel+=dynos.get(key).zaccel;           //to do: add spin variable that will affect zaccel
+
+    dynos.get(key).x+=dynos.get(key).xvel;
+    dynos.get(key).y+=dynos.get(key).yvel;
+    if(dynos.get(key).x>=275 && dynos.get(key).x<=725 && dynos.get(key).y>=225 && dynos.get(key).y<=475){
+      if(objects.get(key).height+dynos.get(key).zvel>=125){
+        objects.get(key).height+=dynos.get(key).zvel;
+      }else{
+        objects.get(key).height=125;
+        dynos.get(key).zvel= -dynos.get(key).zvel;
+      }
+    }else{                            //outside of table
+      if(objects.get(key).height+dynos.get(key).zvel>=0){
+        objects.get(key).height+=dynos.get(key).zvel;
+      }else{
+        objects.get(key).height=0;
+        dynos.get(key).zvel= -dynos.get(key).zvel;
+        play=false;             //ball falls on ground and point is over
+      }
+    }
+  });
   window.requestAnimationFrame(mainLoop);
 }
 init();
