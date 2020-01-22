@@ -10,33 +10,52 @@ const netHeight = 25;
 var play = true;
 let objects = new Map();
 let dynos = new Map();
+var bounces = new Array();
 //classes
 function dynObject(x,y){
   this.x = x;
   this.y = y;
-  this.xvel = 0;
-  this.yvel = 0;
+  this.xvel = 15;
+  this.yvel = -2;
   this.zvel = 0;
   this.xaccel = 0;
   this.yaccel = 0;
-  this.zaccel = -26;
+  this.zaccel = -2;
 }
 function object(height,thicc){
   this.thicc=thicc;
   this.height=height;
 }
+function bounce(x,y){
+  this.x = x;
+  this.y = y;
+  this.count = 0;
+}
+//event listeners
+document.addEventListener("keydown", function (event){
+
+});
 function drawBall(x,y){
   ctx.shadowColor = "1a0000";
   let shadowHeight=objects.get("ball").height;
-  if(calcShadowY(shadowHeight-125,objects.get("ball").thicc)+dynos.get("ball").y>=225){
+  if(calcShadowY(shadowHeight-125,objects.get("ball").thicc)+dynos.get("ball").y>=225 && dynos.get("ball").x>=275 && dynos.get("ball").x<=725){
     shadowHeight-=125;            //shadow lands on table
   }
   ctx.shadowOffsetY=calcShadowY(shadowHeight, objects.get("ball").thicc);
   ctx.shadowBlue=calcShadowBlur(objects.get("ball").height, objects.get("ball").thicc);
   ctx.fillStyle = "#f2f2f2";
   ctx.beginPath();
-  ctx.arc(x,y,(5+0.03*(objects.get("ball").height-100)),0,2*Math.PI,false);
+  ctx.arc(x,y,(5+0.01*(objects.get("ball").height-100)),0,2*Math.PI,false);
   ctx.fill();
+  ctx.restore();
+}
+function drawCirc(x,y,rad,color){
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY=0;
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,rad,0,2*Math.PI,false);
+  ctx.stroke();
   ctx.restore();
 }
 function drawRect(x1,y1,x2,y2,color,shadow){
@@ -80,21 +99,33 @@ function mainLoop(){
   drawRect(497.5,200,502.5,500,"#f2f2f2","net");         //net
   //draw ball
   drawBall(dynos.get("ball").x,dynos.get("ball").y);
-
   //compute physics
   dynos.forEach(function(val,key,map){
+    //friction
+    if(dynos.get(key).xvel>0.05){
+      dynos.get(key).xaccel=-0.005;
+    }else if(dynos.get(key).xvel<-0.05){
+      dynos.get(key).xaccel=0.005;
+    }
+    if(dynos.get(key).yvel>0.05){
+      dynos.get(key).yaccel=-0.005;
+    }else if(dynos.get(key).yvel<-0.05){
+      dynos.get(key).yaccel=0.005;
+    }
+    //add values
     dynos.get(key).xvel+=dynos.get(key).xaccel;
     dynos.get(key).yvel+=dynos.get(key).yaccel;
     dynos.get(key).zvel+=dynos.get(key).zaccel;           //to do: add spin variable that will affect zaccel
-
     dynos.get(key).x+=dynos.get(key).xvel;
     dynos.get(key).y+=dynos.get(key).yvel;
-    if(dynos.get(key).x>=275 && dynos.get(key).x<=725 && dynos.get(key).y>=225 && dynos.get(key).y<=475){
+    //height caculations and bounce determination
+    if(dynos.get(key).x>=275 && dynos.get(key).x<=725 && dynos.get(key).y>=225 && dynos.get(key).y<=475){ 
       if(objects.get(key).height+dynos.get(key).zvel>=125){
         objects.get(key).height+=dynos.get(key).zvel;
-      }else{
+      }else{                            //bounce!
         objects.get(key).height=125;
         dynos.get(key).zvel= -dynos.get(key).zvel;
+        bounces.push(new bounce(dynos.get(key).x,dynos.get(key).y));
       }
     }else{                            //outside of table
       if(objects.get(key).height+dynos.get(key).zvel>=0){
@@ -102,10 +133,17 @@ function mainLoop(){
       }else{
         objects.get(key).height=0;
         dynos.get(key).zvel= -dynos.get(key).zvel;
+        bounces.push(new bounce(dynos.get(key).x,dynos.get(key).y));
         play=false;             //ball falls on ground and point is over
       }
     }
   });
+  //drawing bounces
+  for(let i = 0; i<bounces.length; i++){
+    bounces[i].count++;
+    drawCirc(bounces[i].x,bounces[i].y,bounces[i].count*2,"#f2f2f2");
+    if(bounces[i].count>=10)bounces.splice(i,1);        //remove bounce if it is finished
+  }
   window.requestAnimationFrame(mainLoop);
 }
 init();
